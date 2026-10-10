@@ -1,0 +1,369 @@
+Total slides: 9
+
+=== Slide: ppt/slides/slide1.xml ===
+BUILD
+WITH
+भारत
+ 4.0
+N A T I O N A L   L E V E L   H A C K A T H O N
+P R O J E C T
+GOLDEN HOUR
+A system that detects a crash, finds a suitable hospital, and helps coordinate the response.
+TEAM NAME:
+Dorara Coders
+PROBLEM STATEMENT:
+Road-accident victims don't reach a capable hospital with the right treatment in time
+TEAM MEMBERS:
+Ayush Kumar (Leader), Anubhav Upadhyay, Tanishka Kushwaha, Vinay Kushwaha, Tannu Yadav
+COLLEGE:
+Rajkiya Engineering College, Kannauj
+BUILT WITH 
+भारत4.0
+
+========================================
+
+=== Slide: ppt/slides/slide2.xml ===
+BUILT WITH 
+भारत4.0
+PROBLEM STATEMENT
+THE FIRST 60 MINUTES ARE SPENT WAITING - NOT HEALING
+THE PROBLEM
+India loses 1.77 lakh lives on its roads every year, and the deadliest gap is the first hour after a crash. A crash raises no alert by itself - the victim waits for a bystander to call 108. The control room sends an ambulance blind, with no view of which hospital has a free bed or trauma unit. The ambulance takes 20-30 minutes to arrive, one in four never does, and victims are often taken to a hospital that is already full - then driven on, losing 15-25 minutes at every retry. About 30% die before reaching any hospital at all.
+ROADS ARE THE BOTTLENECK
+20-30 min to scene - ~75% arrive
+THE FLEET EXISTS
+10,993 ambulances - avg 134.5 min
+WHAT HAPPENS TODAY - WHERE THE 60 MINUTES GO
+CRASH
+t = 0, no alert
+CALL 108
+manual, vague spot
+DISPATCH
+blind, no bed data
+20-30 MIN
+only ~75% arrive
+BED FREE?
+trauma unit?
+YES
+CARE BEGINS
+if inside the hour
+NO - FULL
+FULL - TRY NEXT HOSPITAL
++15-25 min, then ask again
+RETRY
+EVERY HANDOFF BURNS MINUTES - GOLDEN HOUR GONE
+1.77 LAKH
+ROAD DEATHS IN INDIA, 2024
+~ 30%
+DIE BEFORE ANY HOSPITAL
+24,118
+DEATHS IN UTTAR PRADESH, 2024
+20-30 min to the scene, 15-25 min more to the facility; only ~75% of dispatched ambulances arrive. [Pan-India NH survey, n=225]  |  Maharashtra avg emergency response 134.5 min. [MEMS, 2023]
+Photos: Rrthakur22, CC BY-SA 4.0  -  UY Scuti, CC BY-SA 3.0, via Wikimedia Commons
+
+========================================
+
+=== Slide: ppt/slides/slide3.xml ===
+BUILT WITH 
+भारत4.0
+PROPOSED SOLUTION
+FROM CRASH TO HOSPITAL, IN ONE FLOW
+GOLDEN HOUR is a crash-to-hospital coordination flow: the phone detects the crash by itself, the engine ranks hospitals that can actually treat the patient, and the ambulance, hospital and family are alerted at once.
+01
+DETECT
+FIXES: 
+the wait for a bystander to call
+Phone sensors raise the alert by themselves
+Confidence score filters false alarms
+30-second cancel window for the user
+02
+DECIDE
+FIXES: 
+blind dispatch with no bed data
+Rejects hospitals with no trauma/ICU/blood
+Scores the rest: rating, beds, road ETA
+Real road ETA via OSRM, not straight line
+03
+RESPOND
+FIXES: 
+transfers between full hospitals
+Ambulance assigned to the chosen hospital
+Hospital pre-alerted with patient ETA
+Green corridor requested
+Every step above replaces a phone call the victim cannot afford to wait for.
+NOT INTEGRATED: 
+Detect, rank and route run end to end on open data. Ambulance handover, hospital bed counts and green-corridor clearance are sent as requests to people, not live system integrations. Those need 108, hospital and traffic-police access, which this prototype does not have.
+ROLLOUT HYPOTHESIS, NOT A CLAIM: 
+a larger rollout would require access to government and hospital data systems, which this prototype does not have.
+
+========================================
+
+=== Slide: ppt/slides/slide4.xml ===
+BUILT WITH 
+भारत4.0
+FLOW OF SOLUTION
+PHONE SPOTS THE CRASH
+accelerometer + GPS, no app open
+CRASH CONFIRMED
+confidence score, 30 s to cancel
+TRAUMA + ICU +
+BLOOD UNIT FREE?
+NO
+REJECTED
+no trauma/ICU/blood unit
+YES
+RANK + CHOOSE
+0.5 rating + 0.3 beds - 0.2 ETA, top reachable wins
+DISPATCH
+ambulance assigned, hospital pre-alerted, corridor requested
+ALSO IN THE LOOP
+Family notified
+Live tracking
+Bystander SOS
+EXAMPLE RUN - TIMINGS ILLUSTRATIVE
+8:42 PM
+crash reported by bystander
++4 s
+crash detected, confidence 92%
++11 s
+capability ranking returns 3 hospitals
++19 s
+best-fit hospital selected, ETA 8 min
++31 s
+ambulance dispatched, hospital pre-alerted
+NOT INTEGRATED: 
+Detect, rank and route run end to end on open data. Ambulance handover, hospital bed counts and green-corridor clearance are sent as requests to people, not live system integrations. Those need 108, hospital and traffic-police access, which this prototype does not have.
+
+========================================
+
+=== Slide: ppt/slides/slide5.xml ===
+BUILT WITH 
+भारत4.0
+TECHNOLOGY & IMPLEMENTATION
+FRONTEND
+What the judge opens in a browser. No install.
+HTML5
+CSS3
+JavaScript (ES6)
+Leaflet
+DATA & MAPS
+Where the hospitals come from. Free, no API key.
+OpenStreetMap
+Overpass API
+curated capability CSV
+ROUTING
+Real road ETA, not straight-line distance.
+OSRM (Project OSRM)
+BACKEND
+Ranking logic and live dispatch state.
+Python 3
+FastAPI
+WebSocket
+BUILD ORDER
+01
+Map hospitals
+02
+Ranking engine
+03
+Crash detection
+04
+Live dashboard
+BUILD SCOPE - WHAT THE PROTOTYPE COVERS
+Crash detection logic
+Hospital ranking engine
+ETA-based routing
+Dispatch workflow
+Live tracking dashboard
+WHAT WE DID NOT CONNECT
+Government EMS / 108 system
+Hospital bed feeds
+Police and traffic signals
+
+========================================
+
+=== Slide: ppt/slides/slide6.xml ===
+BUILT WITH 
+भारत4.0
+KEY FEATURES & INNOVATION
+SAME CRASH, TWO WORKFLOWS
+TODAY
+Nobody knows until a bystander calls 108
+GOLDEN HOUR
+The phone raises the alert by itself
+TODAY
+Nearest hospital is guessed, and often full
+GOLDEN HOUR
+Hospitals ranked by treatment fit and road ETA
+TODAY
+Ambulance, hospital, traffic called one by one
+GOLDEN HOUR
+Everyone alerted together in one flow
+TODAY
+If the sensors miss it, nobody is informed
+GOLDEN HOUR
+A bystander link opens an already-ranked case
+The prototype reduces manual handoffs during an emergency.
+NOT INTEGRATED: 
+Detect, rank and route run end to end on open data. Ambulance handover, hospital bed counts and green-corridor clearance are sent as requests to people, not live system integrations. Those need 108, hospital and traffic-police access, which this prototype does not have.
+
+========================================
+
+=== Slide: ppt/slides/slide7.xml ===
+BUILT WITH 
+भारत4.0
+FEASIBILITY & COMPETITORS
+THE FIVE QUESTIONS A JUDGE WILL ASK
+JUDGE'S CONCERN
+OUR ANSWER
+WHY WE BELIEVE IT
+False crash detection
+GPS speed-drop + accelerometer spike + 30 s cancel window
+An accelerometer-only detector scores ROC-AUC 0.482 - worse than random. GPS-based scores 0.970.  [Liu et al., 2023]
+Where does capability data come from
+Curated, verified CSV + hospital-side admin panel
+OpenStreetMap carries no ICU or trauma-level tag, so a human fills it in. The hospital enters its own state.
+No internet in rural areas
+Offline-first cache of last-known bed and capability state
+108 is prescribed 20 min urban but 30 min rural and 40 min desert.  [CAG]
+Nobody responds at the scene
+Bystander mode
+A nearby person shares the live case; the case is already ranked before they arrive.
+Will the government integrate
+Phase 2. The demo assumes no permission
+eDAR / NTR data access needs MoRTH approval, so the prototype runs entirely on open data.
+EXISTING SYSTEM
+DOES WELL
+MISSING LINK
+IN THE FIRST 60 MINUTES
+108 / MEMS
+Large-scale dispatch: 10,993 ambulances
+Routes on availability, not on clinical capability
+Average response 25-30 min
+Google Maps
+Live traffic and real road ETA
+Zero clinical capability or bed data
+Knows the road, not the hospital
+eDAR / iDAR
+Complete accident record, all States and UTs
+Post-hoc - police register the crash first
+No effect on the first 60 minutes
+Traffic police
+Clears a corridor once asked
+Triggered by a phone call, not by a system
+Manual: 20 km in 20-22 min
+OUR SYSTEM
+Connects all four stages into one workflow
+Live feeds still need real integrations
+Detect, rank, route, request
+Each rival owns one stage. The gap - and our edge - is the connection between them.
+
+========================================
+
+=== Slide: ppt/slides/slide8.xml ===
+BUILT WITH 
+भारत4.0
+DEMO & IMPACT
+WHAT THE JUDGE WILL SEE
+SCENARIO: 
+8:42 PM, NH-9 - a rider crashes where no one stops to help. The phone raises the alert itself, a hospital is ranked, and everyone is told at once. The panels below replay those 90 seconds.
+GOLDEN HOUR  ·  LIVE DISPATCH
+ILLUSTRATIVE MOCKUP - REPLACE WITH A REAL SCREENSHOT BEFORE SUBMITTING
+Crash detected
+confidence 92%
+Location confirmed
+GPS fix, 4 satellites
+Recommended hospital
+trauma-capable, ICU available
+Ambulance assigned
+ETA 8 min
+Green corridor alert
+traffic control notified
+Family notified
+live link sent
+THE 90-SECOND DEMO
+1
+Open the demo link - nothing to install
+2
+Simulate a crash, or use a real recorded sensor trace
+3
+Watch the hospital ranking reorder by capability
+4
+Trigger the corridor, watch the control room go green
+5
+Show the bystander link on a second device
+TARGETS, NOT PROVEN RESULTS
+6 MIN
+TARGET - TIME TO FIRST INFORMED RESPONDER
+Benchmark: Karnataka's bike-response programme reports a six-minute median response.
+SECONDS
+TARGET - TIME TO A SHORTLIST OF HOSPITALS
+Time for the ranking to return three hospitals, before the responder chooses one.
+0 CALLS
+REQUIRED FROM THE PATIENT
+The phone detects the crash on its own. Nobody dials. A bystander only opens a link.
+
+========================================
+
+=== Slide: ppt/slides/slide9.xml ===
+BUILT WITH 
+भारत4.0
+RESEARCH AND REFERENCE
+8
+SOURCES SHOWN
+government and peer-reviewed
+7
+CONTENT SLIDES
+every claim traced to a source
+1
+PROJECT FLOW
+detection, hospital selection, coordination
+THE EIGHT DECISIVE SOURCES
+  ·  eight further sources (MoRTH 2023, JMMS, CAG, e
+ 
+DAR, Overpass API, WHO and one Thane traffic-police corridor report) back the secondary claims. Ask us and we will walk through them.
+SLIDE
+WHAT WE CLAIM
+SOURCE
+LINK
+2
+1.77 lakh deaths, 4.87 lakh crashes, UP 24,118
+MoRTH — Road Accidents in India 2024
+morth.gov.in  ↗
+2
+20-30 min to the scene; only ~75% of ambulances arrive
+Pan-India NH golden-hour survey, 2024 (n=225)
+PMC11006034  ↗
+2
+134.5 min average emergency response, Maharashtra
+Maharashtra MEMS district study, 2023
+PMC10692338  ↗
+2
+10,993 ambulances under 108
+Trauma in India — TSACO
+tsaco.bmj.com  ↗
+7
+Accelerometer-only detector: ROC-AUC 0.482, worse than random
+Liu et al., Transp. Res. Part C, 2023
+arxiv.org  ↗
+7
+OSM carries no ICU or trauma-level tag, so data is curated
+OpenStreetMap — emergency tagging
+wiki.openstreetmap.org  ↗
+8
+Bike response hits a 6 min median, first responder in 1/3 of cases
+Karnataka 'Platinum Ten Minutes' — The Hindu, Jun 2025
+thehindu.com  ↗
+7
+Manual green corridor: 20 km in 20-22 min, peak traffic
+Delhi Traffic Police, Aug 2026 - ANI
+aninews.in  ↗
+SLIDE 2: 108 FLEET ON THE MOVE
+10,993 ambulances - TSACO
+SLIDE 7: WHY CORRIDORS MATTER
+20 km in 20-22 min, peak traffic
+SLIDE 2: FAR-FROM-CITY SCENES
+20-30 min to the scene - NH survey
+Reference photos: Satyam Shukla 28, CC0  -  Deepak, CC BY 2.0  -  Mailamal, CC0, via Wikimedia Commons
+
+========================================
+

@@ -1,0 +1,547 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Golden Hour - Emergency Response & Hospital Allocation</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #dc2626;
+      --primary-hover: #b91c1c;
+      --success: #16a34a;
+      --warning: #eab308;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --whatsapp: #25D366;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    header { background: #111827; border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-logo { background: var(--primary); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; }
+    .brand-title { font-size: 18px; font-weight: 700; color: #fff; }
+    .brand-subtitle { font-size: 12px; color: var(--text-muted); }
+    .tabs { display: flex; gap: 8px; background: #1e293b; padding: 4px; border-radius: 10px; border: 1px solid var(--border); }
+    .tab-btn { padding: 8px 18px; border: none; background: transparent; color: var(--text-muted); border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+    .ws-pill { font-size: 12px; padding: 4px 10px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
+    .ws-pill.disconnected { background: #7f1d1d; color: #fca5a5; border-color: #dc2626; }
+    main { flex: 1; padding: 16px; display: flex; flex-direction: column; }
+    .view-content { display: none; flex: 1; }
+    .view-content.active { display: flex; flex-direction: column; gap: 16px; }
+    .pwa-container { max-width: 680px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 20px; }
+    .pwa-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+    .pwa-header { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; }
+    .select-hospital { background: #0f172a; color: #fff; border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; width: 100%; }
+    .resource-grid { display: flex; flex-direction: column; gap: 18px; }
+    .resource-row { background: #111827; border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
+    .resource-meta h4 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .resource-meta p { font-size: 13px; color: var(--text-muted); }
+    .stepper { display: flex; align-items: center; gap: 12px; }
+    .btn-step { width: 48px; height: 48px; border-radius: 10px; border: 1px solid var(--border); background: #334155; color: #fff; font-size: 24px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .btn-step:hover { background: #475569; }
+    .step-val { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; min-width: 50px; text-align: center; color: #38bdf8; }
+    .toggle-btn { padding: 12px 24px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-size: 15px; }
+    .toggle-btn.yes { background: #16a34a; color: #fff; }
+    .toggle-btn.no { background: #dc2626; color: #fff; }
+    .dashboard-top { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px 20px; flex-wrap: wrap; gap: 12px; }
+    .sim-buttons { display: flex; gap: 10px; }
+    .btn-sim { padding: 10px 18px; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .btn-sim.crash { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; box-shadow: 0 4px 14px rgba(239,68,68,0.4); }
+    .btn-sim.drop { background: #334155; color: #e2e8f0; border: 1px solid var(--border); }
+    .grid-dashboard { display: grid; grid-template-columns: 420px 1fr; gap: 16px; flex: 1; min-height: 580px; }
+    @media (max-width: 1024px) { .grid-dashboard { grid-template-columns: 1fr; } }
+    .left-panel { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; max-height: calc(100vh - 160px); }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .card-header { font-size: 14px; font-weight: 700; color: #cbd5e1; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .hospital-choice-card { border: 2px solid #22c55e; background: #064e3b22; }
+    .badge-allocated { background: #16a34a; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+    .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .stat-box { background: #111827; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+    .stat-box .title { font-size: 11px; color: var(--text-muted); }
+    .stat-box .value { font-size: 16px; font-weight: 800; color: #f8fafc; margin-top: 2px; }
+    .whatsapp-card { background: #0b141a; border: 1px solid #1f2c34; border-radius: 12px; padding: 14px; }
+    .whatsapp-header { font-size: 13px; font-weight: 700; color: var(--whatsapp); margin-bottom: 8px; }
+    .whatsapp-bubble { background: #005c4b; color: #e9edef; padding: 12px; border-radius: 10px 10px 0 10px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; border-left: 3px solid #25d366; }
+    .whatsapp-bubble a { color: #53bdeb; }
+    .candidates-list { display: flex; flex-direction: column; gap: 8px; }
+    .candidate-item { background: #111827; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .candidate-item.rejected { opacity: 0.6; border-color: #7f1d1d; background: #450a0a33; }
+    .candidate-item.winner { border: 1px solid #22c55e; background: #052e1644; }
+    #map-container { background: #0f172a; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; min-height: 580px; }
+    #map { width: 100%; height: 100%; min-height: 580px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    .modal-overlay.active { display: flex; }
+    .modal-box { background: #111827; border: 2px solid var(--primary); border-radius: 20px; max-width: 460px; width: 90%; padding: 30px; text-align: center; }
+    .countdown-circle { font-size: 58px; font-weight: 900; font-family: 'JetBrains Mono', monospace; color: #ef4444; margin: 16px 0; }
+    .btn-cancel { padding: 14px; background: #334155; color: #fff; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 10px; }
+    .btn-skip { padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; width: 100%; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">🚨</div>
+      <div>
+        <div class="brand-title">GOLDEN HOUR</div>
+        <div class="brand-subtitle">Automated Crash Detection & Hospital Bed Dispatch · Build with Bharat 4.0</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn" id="btn-tab-nurse" onclick="switchTab('nurse')">🏥 Tab 1: Nurse Bed Portal</button>
+      <button class="tab-btn active" id="btn-tab-dashboard" onclick="switchTab('dashboard')">🚨 Tab 2: Control Room & Live Map</button>
+    </div>
+    <div class="ws-pill" id="ws-status">● Connected to Cloud</div>
+  </header>
+
+  <main>
+    <!-- TAB 1: HOSPITAL STAFF PWA -->
+    <section class="view-content" id="view-nurse">
+      <div class="pwa-container">
+        <div class="pwa-card">
+          <div class="pwa-header">
+            <h2 style="font-size: 20px; font-weight: 800;">Hospital Bed & Trauma Portal</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Nurse / Triage Desk: Updates sync in milliseconds via WebSocket.</p>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">MANAGING HOSPITAL:</label>
+            <select class="select-hospital" id="hospital-selector" onchange="onHospitalSelectChange()"></select>
+          </div>
+          <div class="resource-grid">
+            <div class="resource-row">
+              <div class="resource-meta"><h4>Free ICU Beds</h4><p>Equipped with ventilator & monitoring</p></div>
+              <div class="stepper">
+                <button class="btn-step" onclick="adjustResource('icu_beds', -1)">−</button>
+                <div class="step-val" id="nurse-val-icu">0</div>
+                <button class="btn-step" onclick="adjustResource('icu_beds', 1)">+</button>
+              </div>
+            </div>
+            <div class="resource-row">
+              <div class="resource-meta"><h4>Emergency Trauma Center</h4><p>On-duty trauma surgeon & OT ready</p></div>
+              <div><button class="toggle-btn yes" id="nurse-btn-trauma" onclick="toggleTrauma()">YES (Active)</button></div>
+            </div>
+            <div class="resource-row">
+              <div class="resource-meta"><h4>O-Negative / Blood Units</h4><p>Cross-matched emergency units</p></div>
+              <div class="stepper">
+                <button class="btn-step" onclick="adjustResource('blood_units', -1)">−</button>
+                <div class="step-val" id="nurse-val-blood">0</div>
+                <button class="btn-step" onclick="adjustResource('blood_units', 1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 24px; padding: 12px; background: #111827; border-radius: 8px; font-size: 12px; color: var(--text-muted);">
+            <span style="color: #22c55e;">✔</span> When you click + / − here, Tab 2's Leaflet Map recalculates hospital rankings and bed availability instantly!
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ACCIDENT LIVE DASHBOARD -->
+    <section class="view-content active" id="view-dashboard">
+      <div class="dashboard-top">
+        <div>
+          <span style="font-size: 13px; font-weight: 700; color: #94a3b8;">MONITORING REGION:</span>
+          <span style="font-size: 14px; font-weight: 700; color: #f8fafc; margin-left: 6px;">NH-9 Kannauj Corridor · Uttar Pradesh</span>
+        </div>
+        <div class="sim-buttons">
+          <button class="btn-sim drop" onclick="simulateFalseAlarm()">⚠️ Test False Alarm (Phone Drop)</button>
+          <button class="btn-sim crash" onclick="startCrashSimulation()">💥 Simulate Real Crash (Dual-Factor)</button>
+        </div>
+      </div>
+      <div class="grid-dashboard">
+        <div class="left-panel">
+          <div class="card" id="dispatch-banner">
+            <div class="card-header">
+              <span>DISPATCH STATUS</span>
+              <span class="badge-allocated" id="status-badge" style="background: #334155;">STANDBY</span>
+            </div>
+            <div id="dispatch-summary" style="font-size: 13px; color: var(--text-muted);">
+              Waiting for vehicle crash sensor trigger or simulation click. Click <b>"Simulate Real Crash"</b> to test.
+            </div>
+          </div>
+          <div class="card hospital-choice-card" id="selected-hospital-card" style="display: none;">
+            <div class="card-header">
+              <span style="color: #4ade80;">🎯 ALLOCATED HOSPITAL</span>
+              <span class="badge-allocated">BED RESERVED</span>
+            </div>
+            <h3 id="selected-h-name" style="font-size: 17px; font-weight: 800; color: #fff;">-</h3>
+            <p id="selected-h-addr" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">-</p>
+            <div class="stat-row">
+              <div class="stat-box"><div class="title">ROAD ETA (OSRM)</div><div class="value" id="selected-h-eta" style="color: #38bdf8;">- mins</div></div>
+              <div class="stat-box"><div class="title">DISTANCE</div><div class="value" id="selected-h-dist">- km</div></div>
+              <div class="stat-box"><div class="title">AVAILABLE ICU BEDS</div><div class="value" id="selected-h-beds" style="color: #4ade80;">-</div></div>
+              <div class="stat-box"><div class="title">ALGORITHM SCORE</div><div class="value" id="selected-h-score">-</div></div>
+            </div>
+          </div>
+          <div class="whatsapp-card" id="whatsapp-container" style="display: none;">
+            <div class="whatsapp-header">💬 SIMULATED RELATIVE & 108 WHATSAPP ALERT</div>
+            <div class="whatsapp-bubble" id="whatsapp-bubble-text"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span>HOSPITAL RANKING MATRIX</span>
+              <span style="font-size: 11px; color: var(--text-muted);">Formula: 0.5★ + 0.3Beds - 0.2ETA</span>
+            </div>
+            <div class="candidates-list" id="candidates-container">
+              <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 12px;">No emergency active. Hospitals shown on map.</div>
+            </div>
+          </div>
+        </div>
+        <div id="map-container"><div id="map"></div></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="crash-modal">
+    <div class="modal-box">
+      <div style="font-size: 50px; margin-bottom: 12px;">🚨</div>
+      <h2 style="font-size: 22px; font-weight: 800; color: #ef4444;">CRASH DETECTED!</h2>
+      <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Dual-Factor: 4.8g Spike + GPS Speed Drop (65 → 0 km/h)</p>
+      <div class="countdown-circle" id="modal-timer">30</div>
+      <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 20px;">Are you okay? If you do not cancel within 30 seconds, 108 Ambulance and Trauma Center will be dispatched automatically.</p>
+      <button class="btn-cancel" onclick="cancelEmergency()">I'M OK — CANCEL ALERT</button>
+      <button class="btn-skip" onclick="confirmEmergencyNow()">FAST DEMO: DISPATCH NOW ⚡</button>
+    </div>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let hospitals = [];
+    let currentHospitalId = null;
+    let ws = null;
+    let map = null;
+    let crashMarker = null;
+    let routePolyline = null;
+    let hospitalMarkers = {};
+    let countdownInterval = null;
+    let countdownSeconds = 30;
+
+    let crashLat = 27.0580;
+    let crashLon = 79.9100;
+
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) {}
+    }
+
+    function switchTab(tab) {
+      document.getElementById('view-nurse').classList.toggle('active', tab === 'nurse');
+      document.getElementById('view-dashboard').classList.toggle('active', tab === 'dashboard');
+      document.getElementById('btn-tab-nurse').classList.toggle('active', tab === 'nurse');
+      document.getElementById('btn-tab-dashboard').classList.toggle('active', tab === 'dashboard');
+      if (tab === 'dashboard' && map) {
+        setTimeout(() => map.invalidateSize(), 200);
+      }
+    }
+
+    function initMap() {
+      map = L.map('map').setView([27.0550, 79.9200], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap contributors | OSRM Project'
+      }).addTo(map);
+
+      map.on('click', function(e) {
+        crashLat = e.latlng.lat;
+        crashLon = e.latlng.lng;
+        updateCrashMarker();
+      });
+
+      updateCrashMarker();
+    }
+
+    function updateCrashMarker() {
+      if (crashMarker) {
+        crashMarker.setLatLng([crashLat, crashLon]);
+      } else {
+        const crashIcon = L.divIcon({
+          html: '<div style="background:#ef4444; width:34px; height:34px; border-radius:50%; border:3px solid #fff; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 0 15px #ef4444;">💥</div>',
+          className: '',
+          iconSize: [34, 34],
+          iconAnchor: [17, 17]
+        });
+        crashMarker = L.marker([crashLat, crashLon], { icon: crashIcon, draggable: true }).addTo(map);
+        crashMarker.bindPopup("<b>Crash Site (NH-9)</b><br>Drag to reposition or click map").openPopup();
+        crashMarker.on('dragend', function(e) {
+          const pos = e.target.getLatLng();
+          crashLat = pos.lat;
+          crashLon = pos.lng;
+        });
+      }
+    }
+
+    function renderHospitalMarkers() {
+      hospitals.forEach(h => {
+        let badgeColor = "#22c55e";
+        if (!h.has_trauma) badgeColor = "#64748b";
+        else if (h.icu_beds === 0) badgeColor = "#ef4444";
+
+        const iconHtml = `
+          <div style="background:${badgeColor}; color:#fff; border-radius:8px; padding:3px 6px; font-size:11px; font-weight:800; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.5); display:flex; align-items:center; gap:4px; white-space:nowrap;">
+            🏥 ${h.icu_beds} Beds
+          </div>
+        `;
+        const icon = L.divIcon({ html: iconHtml, className: '', iconSize: [70, 24], iconAnchor: [35, 12] });
+
+        if (hospitalMarkers[h.id]) {
+          hospitalMarkers[h.id].setIcon(icon);
+          hospitalMarkers[h.id].setPopupContent(getHospitalPopup(h));
+        } else {
+          const marker = L.marker([h.lat, h.lon], { icon }).addTo(map);
+          marker.bindPopup(getHospitalPopup(h));
+          hospitalMarkers[h.id] = marker;
+        }
+      });
+    }
+
+    function getHospitalPopup(h) {
+      return `
+        <div style="color:#111;">
+          <b>${h.name}</b><br>
+          Trauma Unit: <b>${h.has_trauma ? "YES" : "NO"}</b><br>
+          Free ICU Beds: <b>${h.icu_beds}</b><br>
+          Blood Units: <b>${h.blood_units}</b><br>
+          Rating: ⭐ <b>${h.rating}</b>
+        </div>
+      `;
+    }
+
+    function setupWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        document.getElementById('ws-status').textContent = '● Live Synced';
+        document.getElementById('ws-status').classList.remove('disconnected');
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'INITIAL_STATE') {
+          hospitals = msg.hospitals;
+          initNursePortal();
+          renderHospitalMarkers();
+        } else if (msg.type === 'HOSPITAL_UPDATED') {
+          const idx = hospitals.findIndex(h => h.id === msg.hospital.id);
+          if (idx !== -1) hospitals[idx] = msg.hospital;
+          renderHospitalMarkers();
+          updateNurseInputs();
+        } else if (msg.type === 'EMERGENCY_DISPATCHED') {
+          handleEmergencyDispatched(msg.data);
+        }
+      };
+
+      ws.onclose = () => {
+        document.getElementById('ws-status').textContent = '○ Reconnecting...';
+        document.getElementById('ws-status').classList.add('disconnected');
+        setTimeout(setupWebSocket, 2000);
+      };
+    }
+
+    function initNursePortal() {
+      const sel = document.getElementById('hospital-selector');
+      sel.innerHTML = '';
+      hospitals.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h.id;
+        opt.textContent = `${h.name} (${h.icu_beds} ICU Beds)`;
+        sel.appendChild(opt);
+      });
+      if (!currentHospitalId && hospitals.length > 0) {
+        currentHospitalId = hospitals[0].id;
+      }
+      sel.value = currentHospitalId;
+      updateNurseInputs();
+    }
+
+    function onHospitalSelectChange() {
+      currentHospitalId = document.getElementById('hospital-selector').value;
+      updateNurseInputs();
+    }
+
+    function updateNurseInputs() {
+      const h = hospitals.find(x => x.id === currentHospitalId);
+      if (!h) return;
+      document.getElementById('nurse-val-icu').textContent = h.icu_beds;
+      document.getElementById('nurse-val-blood').textContent = h.blood_units;
+      const btnTrauma = document.getElementById('nurse-btn-trauma');
+      btnTrauma.textContent = h.has_trauma ? "YES (Active)" : "NO (Inactive)";
+      btnTrauma.className = `toggle-btn ${h.has_trauma ? 'yes' : 'no'}`;
+    }
+
+    async function adjustResource(field, delta) {
+      const h = hospitals.find(x => x.id === currentHospitalId);
+      if (!h) return;
+      const newVal = Math.max(0, h[field] + delta);
+      h[field] = newVal;
+      updateNurseInputs();
+
+      await fetch(`/api/hospitals/${currentHospitalId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: newVal })
+      });
+    }
+
+    async function toggleTrauma() {
+      const h = hospitals.find(x => x.id === currentHospitalId);
+      if (!h) return;
+      const newVal = !h.has_trauma;
+      h.has_trauma = newVal;
+      updateNurseInputs();
+
+      await fetch(`/api/hospitals/${currentHospitalId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ has_trauma: newVal })
+      });
+    }
+
+    function simulateFalseAlarm() {
+      alert("⚠️ DUAL-FACTOR REJECTED: Phone Drop Detected!\n\nSensor Output:\n- Accelerometer: 2.1g spike\n- Speed prior: 0 km/h (Stationary)\n\nResult: Heuristic confirmed phone was accidentally dropped. No false alarm raised.");
+    }
+
+    function startCrashSimulation() {
+      countdownSeconds = 30;
+      document.getElementById('modal-timer').textContent = countdownSeconds;
+      document.getElementById('crash-modal').classList.add('active');
+      playBeep();
+
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        countdownSeconds--;
+        document.getElementById('modal-timer').textContent = countdownSeconds;
+        playBeep();
+        if (countdownSeconds <= 0) {
+          clearInterval(countdownInterval);
+          confirmEmergencyNow();
+        }
+      }, 1000);
+    }
+
+    function cancelEmergency() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      document.getElementById('crash-modal').classList.remove('active');
+      alert("Emergency Alert Cancelled by Driver. Status normal.");
+    }
+
+    function confirmEmergencyNow() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      document.getElementById('crash-modal').classList.remove('active');
+
+      document.getElementById('status-badge').textContent = 'CALCULATING OSRM ROUTE';
+      document.getElementById('status-badge').style.background = '#eab308';
+      document.getElementById('dispatch-summary').innerHTML = 'Sending crash telemetry, filtering non-trauma clinics, querying OSRM real road travel time...';
+
+      fetch('/api/emergency/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat: crashLat,
+          lon: crashLon,
+          confidence: 0.94,
+          speed_before: 68.0,
+          speed_after: 0.0,
+          accel_g: 5.1
+        })
+      });
+    }
+
+    function handleEmergencyDispatched(data) {
+      if (data.status !== 'dispatched') {
+        alert(data.message || 'Dispatch error');
+        return;
+      }
+
+      document.getElementById('status-badge').textContent = '108 AMBULANCE DISPATCHED';
+      document.getElementById('status-badge').style.background = '#16a34a';
+      document.getElementById('dispatch-summary').innerHTML = 'Accident confirmed on NH-9. Best trauma hospital matched via OSRM real road routing.';
+
+      const selCard = document.getElementById('selected-hospital-card');
+      selCard.style.display = 'block';
+      document.getElementById('selected-h-name').textContent = data.selected_hospital.name;
+      document.getElementById('selected-h-addr').textContent = data.selected_hospital.address;
+      document.getElementById('selected-h-eta').textContent = `${data.eta_mins} mins`;
+      document.getElementById('selected-h-dist').textContent = `${data.distance_km} km`;
+      document.getElementById('selected-h-beds').textContent = data.selected_hospital.icu_beds;
+      document.getElementById('selected-h-score').textContent = data.score;
+
+      document.getElementById('whatsapp-container').style.display = 'block';
+      const cleanMsg = data.whatsapp_preview.replace(/\n/g, '<br>');
+      document.getElementById('whatsapp-bubble-text').innerHTML = cleanMsg;
+
+      const candContainer = document.getElementById('candidates-container');
+      candContainer.innerHTML = '';
+
+      data.all_ranked_candidates.forEach((c) => {
+        const isWinner = c.hospital.id === data.selected_hospital.id;
+        const row = document.createElement('div');
+        row.className = `candidate-item ${isWinner ? 'winner' : ''}`;
+        row.innerHTML = `
+          <div>
+            <b>${isWinner ? '🏆 ' : ''}${c.hospital.name}</b><br>
+            <span style="color:var(--text-muted)">OSRM ETA: ${c.eta_mins}m | Beds: ${c.hospital.icu_beds} | ★${c.hospital.rating}</span>
+          </div>
+          <div style="font-weight:800; font-family:'JetBrains Mono'; color:${isWinner ? '#4ade80' : '#cbd5e1'}">
+            Score: ${c.score}
+          </div>
+        `;
+        candContainer.appendChild(row);
+      });
+
+      if (data.rejected_hospitals) {
+        data.rejected_hospitals.forEach(r => {
+          const row = document.createElement('div');
+          row.className = 'candidate-item rejected';
+          row.innerHTML = `
+            <div>
+              <b>❌ ${r.hospital.name}</b><br>
+              <span style="color:#f87171">${r.reason}</span>
+            </div>
+            <div style="font-weight:700; color:#ef4444;">FILTERED</div>
+          `;
+          candContainer.appendChild(row);
+        });
+      }
+
+      if (routePolyline) {
+        map.removeLayer(routePolyline);
+      }
+
+      if (data.route_geometry && data.route_geometry.coordinates) {
+        const latlngs = data.route_geometry.coordinates.map(coord => [coord[1], coord[0]]);
+        routePolyline = L.polyline(latlngs, {
+          color: '#2563eb',
+          weight: 6,
+          opacity: 0.9,
+          dashArray: '8, 8'
+        }).addTo(map);
+
+        map.fitBounds(routePolyline.getBounds(), { padding: [50, 50] });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      setupWebSocket();
+    });
+  </script>
+</body>
+</html>
